@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+#
+# calling this locally with ruby -Ilib bin/podcast-to-youtube upload 
+# otherwise the installed rubygem gets used
+
+require 'rss-to-podigee-json'
+require 'optparse'
+
+options = {}
+
+opt_parser = OptionParser.new do |opt|  
+	opt.banner = "Usage: rss-to-podigee-json COMMAND [OPTIONS]"
+	opt.separator  ""
+	opt.separator  "Commands"
+	opt.separator  "     generate: parse the given podcast feed and generate config files for each episode"
+	opt.separator  ""
+	opt.separator  "Options"
+
+	opt.on("-f","--feedurl URL","podcast feed url") do |feedurl|
+		options[:feedurl] = feedurl
+	end
+
+	opt.on("-h","--help","print this help") do
+		puts opt_parser
+	end
+end
+
+opt_parser.parse!
+
+if ARGV[0] == "generate"
+	uploader = PodigeeConfigGenerator.new
+	uploader.generate(options[:feedurl])
+else  
+	puts opt_parser
+end  
