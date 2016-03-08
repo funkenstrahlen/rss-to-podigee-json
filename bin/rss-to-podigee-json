@@ -28,6 +28,10 @@ end
 opt_parser.parse!
 
 if ARGV[0] == "generate"
+	if options[:feedurl].nil?
+		puts opt_parser
+		raise OptionParser::MissingArgument if options[:feedurl].nil?
+	end
 	uploader = PodigeeConfigGenerator.new
 	uploader.generate(options[:feedurl])
 else  
