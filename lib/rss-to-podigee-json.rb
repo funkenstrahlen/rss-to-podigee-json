@@ -8,8 +8,8 @@ require 'json'
 class PodigeeConfigGenerator
 
 	def generate(podcast_feed_url)
-		feed = parse_feed podcast_feed_url
-		feed.entries.reverse_each do |entry|
+		@feed = parse_feed podcast_feed_url
+		@feed.entries.reverse_each do |entry|
 			generate_config_file_for_entry entry
 		end
 	end
@@ -22,7 +22,13 @@ class PodigeeConfigGenerator
 		end
 
 		def generate_config_file_for_entry(entry)
-			puts "generating config file for #{entry}"
+			puts "generating config file for #{entry.title}"
+
+			enclosure_filename = URI(entry.enclosure_url).path.split('/').last
+			config_filename = "#{File.basename(enclosure_filename, File.extname(enclosure_filename))}.json"
+			config_baseurl = "https://podigee.github.io/podigee-podcast-player/example/"
+			config_url = URI.join(config_baseurl, config_filename)
+
 			config = {
 				"options": {
 					"theme": "default",
@@ -36,36 +42,41 @@ class PodigeeConfigGenerator
 						"showOnStart": false
 					},
 					"Playlist": {
-						"showOnStart": false
+						"showOnStart": false,
+						"disabled": true
 					},
 					"Share": {
 						"showOnStart": false
 					},
 					"Transcript": {
-						"showOnStart": false
+						"showOnStart": false,
+						"disabled": true
 					},
 					"Waveform": {
-						"showOnStart": false
+						"showOnStart": false,
+						"disabled": true
 					}
 				},
 				"podcast": {
-					"feed": "https://cdn.podigee.com/ppp/samples/feed.xml"
+					"feed": "#{@feed.feed_url}"
 				},
 				"episode": {
-					"media": {
-						"mp3": "https://cdn.podigee.com/ppp/samples/media.mp3?source=webplayer",
-						"m4a": "https://cdn.podigee.com/ppp/samples/media.m4a",
-						"ogg": "https://cdn.podigee.com/ppp/samples/media.ogg",
-						"opus": "https://cdn.podigee.com/ppp/samples/media.opus"
-					},
-					"coverUrl": "https://cdn.podigee.com/ppp/samples/cover.jpg",
-					"url": "https://podigee.github.io/podigee-podcast-player/",
-					"embedCode": "<script class=\"podigee-podcast-player\" src=\"https://podigee.github.io/podigee-podcast-player/build/javascripts/podigee-podcast-player.js\" data-configuration=\"https://podigee.github.io/podigee-podcast-player/example/config.json\"></script>",
-					"title": "FG009 Wirtschaftspolitischer Journalismus",
-					"subtitle": "Wie Henrik Müller in Dortmund wirtschaftspolitischen Journalismus lehrt und erforscht. Und was guten Wirtschaftsjournalismus ausmacht.",
-					"description": "Raus aus der prallen journalistischen Praxis, rein in die Gremien-Universität. Henrik Müller hat diesen ungewöhnlichen Schritt gewagt: 2013 übernahm der damalige stellvertretende Chefredakteur des \"manager magazin\" den Lehrstuhl für wirtschaftspolitischen Journalismus am Institut für Journalistik der Technischen Universität Dortmund. Dort baut er seitdem die neuen Bachelor- und Master-Studiengänge für wirtschaftspolitischen Journalismus auf. Wie er diesen Wechsel zwischen den  Welten erlebt hat, was er seinen Studierenden vermitteln will und woran er forscht, erzählt der immer noch sehr umtriebige Autor (\"Wirtschaftsirrtümer: 50 Denkfehler, die uns Kopf und Kragen kosten\") und Spiegel-Online-Kolumnist in dieser anregenden Episode. Dabei geht es darum, was Wirtschaftsjournalismus leisten soll und muss, was Studierende erst mühsam über Lobbyismus lernen müssen und was eigentlich \"gute Geschichten\" sind."
+					"media": {},
+					"coverUrl": "#{entry.itunes_image}",
+					"url": "#{entry.url}",
+					"embedCode": "<script class=\"podigee-podcast-player\" src=\"https://podigee.github.io/podigee-podcast-player/build/javascripts/podigee-podcast-player.js\" data-configuration=\"#{config_url}\"></script>",
+					"title": "#{entry.title}",
+					"subtitle": "#{entry.itunes_subtitle}",
+					"description": "#{entry.itunes_summary}"
 				}
 			}
-			File.write("test.json", config.to_json)			
+
+			# this currently only supports one single filetype
+			# needs to be extended to support multiple available filetypes
+			# however this is not easy as I only parse the rss feed of a single filetype
+			enclosure_filetype = File.extname(enclosure_filename).split('.').last
+			config[:episode][:media][enclosure_filetype] = entry.enclosure_url
+
+			File.write(config_filename, config.to_json)			
 		end
 end
